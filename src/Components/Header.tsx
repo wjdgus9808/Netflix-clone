@@ -1,7 +1,8 @@
 import styled from "styled-components";
 import { motion, useAnimation, useViewportScroll } from "framer-motion";
-import { Link, useMatch } from "react-router-dom";
+import { Link, useMatch, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 
 const Nav = styled(motion.nav)`
   width: 100%;
@@ -45,7 +46,7 @@ const Item = styled.li`
     color: ${(props) => props.theme.white.lighter};
   }
 `;
-const Search = styled.span`
+const Search = styled.form`
   color: white;
   display: flex;
   position: relative;
@@ -94,10 +95,15 @@ const navVariants = {
     backgroundColor: "rgba(0,0,0,1)",
   },
 };
+
+interface IForm {
+  keyword: string;
+}
 function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const homeMatch = useMatch("/");
   const tvMatch = useMatch("/tv");
+  const navigate = useNavigate();
   const toggleSearch = () => setSearchOpen((prev) => !prev);
   const { scrollY } = useViewportScroll();
   const navAnimation = useAnimation();
@@ -105,12 +111,17 @@ function Header() {
     //모션value는 components를 새로고침 하지않기때문에 값을 읽어내야한다
     scrollY.onChange(() => {
       if (scrollY.get() > 80) {
-        navAnimation.start("top");
-      } else {
         navAnimation.start("scroll");
+      } else {
+        navAnimation.start("top");
       }
     });
   }, [scrollY]);
+  const { register, handleSubmit } = useForm<IForm>();
+  const onValid = (data: IForm) => {
+    console.log(data);
+    navigate(`/search?keyword=${data.keyword}`);
+  };
   return (
     <Nav
       variants={navVariants}
@@ -145,7 +156,7 @@ function Header() {
         </Items>
       </Col>
       <Col>
-        <Search>
+        <Search onSubmit={handleSubmit(onValid)}>
           <motion.svg
             onClick={toggleSearch}
             animate={{ x: searchOpen ? -210 : 0 }}
@@ -161,6 +172,7 @@ function Header() {
             ></path>
           </motion.svg>
           <Input
+            {...register("keyword", { required: true, minLength: 2 })}
             transition={{ type: "linear" }}
             initial={{ scaleX: 0 }}
             animate={{ scaleX: searchOpen ? 1 : 0 }}
